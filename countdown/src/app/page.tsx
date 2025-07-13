@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import Image from 'next/image';
 
 interface Countdown {
   id: string;
@@ -55,7 +56,6 @@ export default function Home() {
   }, []);
 
   const calculateRemainingDays = (start: string, end: string, extraDay: boolean): number => {
-    const startDate = new Date(start);
     const endDate = new Date(end);
     const now = new Date();
 
@@ -159,9 +159,11 @@ export default function Home() {
           <div className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 shadow-lg">
             <div className="flex items-center gap-2">
               {session.user?.image && (
-                <img
+                <Image
                   src={session.user.image}
                   alt="Profile"
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full"
                 />
               )}
@@ -208,7 +210,7 @@ export default function Home() {
             {/* Label Input */}
             <div>
               <label htmlFor="label" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Label (e.g., "US Trip", "Vacation")
+                Label (e.g., &quot;US Trip&quot;, &quot;Vacation&quot;)
               </label>
               <input
                 type="text"
@@ -311,7 +313,7 @@ export default function Home() {
               <li>• Enter a label for your countdown</li>
               <li>• Select your start and end dates</li>
               <li>• Check the box if you want to add an extra day</li>
-              <li>• Click "Calculate Days" then "Save Countdown"</li>
+              <li>• Click &quot;Calculate Days&quot; then &quot;Save Countdown&quot;</li>
               <li>• View your saved countdowns on the right</li>
             </ul>
           </div>
