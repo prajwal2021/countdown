@@ -13,6 +13,14 @@ interface Countdown {
   totalDays: number;
 }
 
+interface FormData {
+  label: string;
+  startDate: string;
+  endDate: string;
+  addExtraDay: boolean;
+  totalDays: number | null;
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
   const [label, setLabel] = useState('');
@@ -21,6 +29,64 @@ export default function Home() {
   const [addExtraDay, setAddExtraDay] = useState(false);
   const [totalDays, setTotalDays] = useState<number | null>(null);
   const [countdowns, setCountdowns] = useState<Countdown[]>([]);
+
+  // Save form data to localStorage whenever it changes (for cross-device sync)
+  useEffect(() => {
+    const formData: FormData = {
+      label,
+      startDate,
+      endDate,
+      addExtraDay,
+      totalDays
+    };
+    
+    if (session?.user?.email) {
+      localStorage.setItem(`formData_${session.user.email}`, JSON.stringify(formData));
+    } else {
+      // Save to sessionStorage for non-logged in users
+      sessionStorage.setItem('formData_guest', JSON.stringify(formData));
+    }
+  }, [label, startDate, endDate, addExtraDay, totalDays, session]);
+
+  // Load form data when session changes (preserve data during login)
+  useEffect(() => {
+    if (session?.user?.email) {
+      // Try to load from localStorage first (cross-device)
+      const savedFormData = localStorage.getItem(`formData_${session.user.email}`);
+      if (savedFormData) {
+        const formData: FormData = JSON.parse(savedFormData);
+        setLabel(formData.label || '');
+        setStartDate(formData.startDate || '');
+        setEndDate(formData.endDate || '');
+        setAddExtraDay(formData.addExtraDay || false);
+        setTotalDays(formData.totalDays);
+      } else {
+        // Fallback to sessionStorage (current device)
+        const guestFormData = sessionStorage.getItem('formData_guest');
+        if (guestFormData) {
+          const formData: FormData = JSON.parse(guestFormData);
+          setLabel(formData.label || '');
+          setStartDate(formData.startDate || '');
+          setEndDate(formData.endDate || '');
+          setAddExtraDay(formData.addExtraDay || false);
+          setTotalDays(formData.totalDays);
+          // Clear guest data after loading
+          sessionStorage.removeItem('formData_guest');
+        }
+      }
+    } else {
+      // Load guest data when not logged in
+      const guestFormData = sessionStorage.getItem('formData_guest');
+      if (guestFormData) {
+        const formData: FormData = JSON.parse(guestFormData);
+        setLabel(formData.label || '');
+        setStartDate(formData.startDate || '');
+        setEndDate(formData.endDate || '');
+        setAddExtraDay(formData.addExtraDay || false);
+        setTotalDays(formData.totalDays);
+      }
+    }
+  }, [session]);
 
   // Load countdowns from localStorage on component mount
   useEffect(() => {
@@ -36,7 +102,7 @@ export default function Home() {
 
   // Save countdowns to localStorage whenever countdowns change
   useEffect(() => {
-    if (session?.user?.email && countdowns.length > 0) {
+    if (session?.user?.email) {
       localStorage.setItem(`countdowns_${session.user.email}`, JSON.stringify(countdowns));
     }
   }, [countdowns, session]);
@@ -194,13 +260,13 @@ export default function Home() {
         )}
       </div>
 
-      {/* Main Content - Side by Side Layout */}
-      <div className="flex gap-6 px-4 pb-8 max-w-7xl mx-auto">
-        {/* Left Side - Calculator */}
+      {/* Main Content - Responsive Layout */}
+      <div className="flex flex-col lg:flex-row gap-6 px-4 pb-8 max-w-7xl mx-auto">
+        {/* Calculator Section */}
         <div className="flex-1">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 lg:p-8">
+            <div className="text-center mb-6 lg:mb-8">
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 Date Calculator
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
@@ -208,7 +274,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 lg:space-y-6">
               {/* Label Input */}
               <div>
                 <label htmlFor="label" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -220,7 +286,7 @@ export default function Home() {
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
                   placeholder="Enter a label for your countdown"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
                 />
               </div>
 
@@ -234,7 +300,7 @@ export default function Home() {
                   id="startDate"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
                 />
               </div>
 
@@ -248,7 +314,7 @@ export default function Home() {
                   id="endDate"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
+                  className="w-full px-3 lg:px-4 py-2 lg:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors"
                 />
               </div>
 
@@ -270,13 +336,13 @@ export default function Home() {
               <div className="flex gap-3">
                 <button
                   onClick={calculateDays}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 lg:py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Calculate Days
                 </button>
                 <button
                   onClick={resetCalculator}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-800 dark:text-white font-medium py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-700 text-gray-800 dark:text-white font-medium py-2 lg:py-3 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
                   Reset
                 </button>
@@ -284,12 +350,12 @@ export default function Home() {
 
               {/* Result Display */}
               {totalDays !== null && (
-                <div className="mt-6 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="mt-6 p-4 lg:p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="text-center">
                     <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">
                       Total Days Between Dates
                     </p>
-                    <p className="text-4xl font-bold text-blue-800 dark:text-blue-200">
+                    <p className="text-3xl lg:text-4xl font-bold text-blue-800 dark:text-blue-200">
                       {totalDays}
                     </p>
                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
@@ -307,7 +373,7 @@ export default function Home() {
             </div>
 
             {/* Instructions */}
-            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="mt-6 lg:mt-8 pt-4 lg:pt-6 border-t border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 How it works:
               </h3>
@@ -322,17 +388,17 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Side - Countdowns */}
-        <div className="w-96">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sticky top-4">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        {/* Countdowns Section */}
+        <div className="w-full lg:w-96">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 lg:p-6 lg:sticky lg:top-4">
+            <div className="mb-4 lg:mb-6">
+              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Your Countdowns
               </h2>
               {!session ? (
-                <div className="text-center py-8">
+                <div className="text-center py-6 lg:py-8">
                   <div className="text-gray-500 dark:text-gray-400 mb-4">
-                    <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-12 h-12 lg:w-16 lg:h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                     <p className="text-sm">Sign in to save and view your countdowns</p>
@@ -358,14 +424,14 @@ export default function Home() {
             </div>
 
             {session && (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+              <div className="space-y-3 lg:space-y-4 max-h-64 lg:max-h-96 overflow-y-auto">
                 {countdowns.map((countdown) => (
                   <div
                     key={countdown.id}
-                    className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-4 border border-blue-200 dark:border-gray-600"
+                    className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-lg p-3 lg:p-4 border border-blue-200 dark:border-gray-600"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-base lg:text-lg">
                         {countdown.label}
                       </h3>
                       <button
@@ -377,7 +443,7 @@ export default function Home() {
                     </div>
                     
                     <div className="text-center">
-                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                      <p className="text-2xl lg:text-3xl font-bold text-blue-600 dark:text-blue-400">
                         {countdown.totalDays}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -385,7 +451,7 @@ export default function Home() {
                       </p>
                     </div>
                     
-                    <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="mt-2 lg:mt-3 text-xs text-gray-500 dark:text-gray-400">
                       <p>Ends: {new Date(countdown.endDate).toLocaleDateString()}</p>
                       {countdown.addExtraDay && (
                         <p className="text-blue-600 dark:text-blue-400">+1 extra day included</p>
@@ -397,7 +463,7 @@ export default function Home() {
             )}
 
             {session && countdowns.length > 0 && (
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="mt-4 lg:mt-6 pt-3 lg:pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => setCountdowns([])}
                   className="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
